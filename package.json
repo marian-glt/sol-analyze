@@ -1,15 +1,10 @@
 {
 	"name": "sol-analyze",
 	"displayName": "sol-analyze",
-	"description": "Static Analysis tool for Solidity",
+	"description": "",
 	"version": "0.0.1",
-	"configurations":[
-		{
-			"console": "integratedTerminal"
-		}
-	],
 	"engines": {
-		"vscode": "^1.62.0"
+		"vscode": "^1.63.0"
 	},
 	"categories": [
 		"Other"
@@ -22,7 +17,7 @@
 		"commands": [
 			{
 				"command": "sol-analyze.execute",
-				"title": "Sol-Analyze"
+				"title": "Analyze Solidity Code"
 			}
 		]
 	},
@@ -35,7 +30,7 @@
 		"@types/glob": "^7.1.4",
 		"@types/mocha": "^9.0.0",
 		"@types/node": "14.x",
-		"@types/vscode": "^1.62.0",
+		"@types/vscode": "^1.63.0",
 		"@vscode/test-electron": "^1.6.2",
 		"eslint": "^8.1.0",
 		"glob": "^7.1.7",

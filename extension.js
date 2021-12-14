@@ -10,7 +10,7 @@ const fs = require('fs');
 /**
  * @param {vscode.ExtensionContext} context
  */
- function activate(context) {
+function activate(context) {
 
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
@@ -21,7 +21,6 @@ const fs = require('fs');
 	// The commandId parameter must match the command field in package.json
 	let disposable = vscode.commands.registerCommand('sol-analyze.execute', function () {
 		// The code you place here will be executed every time your command is executed
-		//Attempt at getting open workspace folder to then get the file that should be passed through the plugin
 		let message = '';
 		if(vscode.workspace.workspaceFolders !== undefined){
 			let file = vscode.window.activeTextEditor.document.uri.fsPath;
@@ -36,26 +35,24 @@ const fs = require('fs');
 
 	context.subscriptions.push(disposable);
 }
+
 function messenger(text){
 	vscode.window.showInformationMessage(text);
 }
 
 function callParser(filePath){
 	messenger(`Sol-Analyzer executing on: ${filePath}`);
-	messenger('before');
-    fs.readFile(filePath, 'utf-8', function(err, data){
-        try {
-            const ast = parser.parse(data);
-            
-        } catch (e) {
-            if (e instanceof parser.ParserError) {
-                console.error(e.errors)
-            }
-        }
-    });
-    messenger('after');
+	fs.readFile(filePath, 'utf-8', function(err, data){
+		try {
+			const ast = parser.parse(data);
+			console.log(ast);
+		} catch (e) {
+			if (e instanceof parser.ParserError) {
+				console.error(e.errors)
+			}
+		}
+	});
 }
-
 // this method is called when your extension is deactivated
 function deactivate() {}
 
