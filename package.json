@@ -10,13 +10,13 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:sol-analyze.execute"
+		"onCommand:sol-analyze.exec"
 	],
 	"main": "./extension.js",
 	"contributes": {
 		"commands": [
 			{
-				"command": "sol-analyze.execute",
+				"command": "sol-analyze.exec",
 				"title": "Analyze Solidity Code"
 			}
 		]
