@@ -14,11 +14,12 @@ const parse = (filePath) => {
 }
 
 const count = (str, regex) => {
+	console.log(str.match(regex));
 	return (str.match(regex) || []).length;
 }
 
 function handleAST(ast){
-	let operandRegex = new RegExp('[>|<]+=?|\^');
+	let operandRegex = new RegExp('[>|<]+=?|\^', 'g');
 	let versionRegex = new RegExp('[0\.[4-7]\.1?[0-9]]')
 	parser.visit(ast, 
 		{
