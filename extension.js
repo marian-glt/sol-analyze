@@ -42,7 +42,7 @@ function messenger(text){
 
 function send_to_read(file){
 	messenger(`Sol-Analyzer executing on: ${file}`);
-	parse(file);	
+	parse(file);
 }
 
 // this method is called when your extension is deactivated
