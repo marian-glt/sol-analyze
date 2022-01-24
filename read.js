@@ -1,6 +1,6 @@
 const reader = require("fs");
 const parser = require("@solidity-parser/parser");
-const { sign } = require("crypto");
+
 
 const parse = (filePath) => {
 	reader.readFile(filePath, 'utf-8', function(err, code){
