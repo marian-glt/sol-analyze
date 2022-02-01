@@ -18,12 +18,12 @@ const find = (str, regex) => {
 }
 
 function handleAST(ast){
-	checkSafeMathUsage(ast);
+	importCheck(ast);
 }
-
-function checkPragma(ast){
+function pragmaCheck(ast){
 	const opReg = new RegExp('[>|<]+=?|\\^', 'g');
 	const verReg = new RegExp('(0\.(1\.[0-7])|(2\.[0-2])|(3\.[0-6])|(4\.[1-2]?[0-9])|(5\.1?[0-9])|(6\.1?[0-9])|(7\.[0-6])){1}');
+	let isOldVersion = false;
 	parser.visit(ast, 
 		{
 			PragmaDirective: function(node){
@@ -31,58 +31,71 @@ function checkPragma(ast){
 				const matches = find(node.value, opReg);
 				
 				if(matches.includes('^') && verReg.test(pragma)){
-					//warning message
-					console.log("Compiling with an old version of Solidity, please change to a newer version.");
+					//for contracts that use the "^" sign, e.g. "pragma solidity ^0.7.0"
+					isOldVersion = true;
 				} else if(opReg.test(pragma)){
 					const signMatches = find(pragma, opReg);
 					if(signMatches.length === 2){
+						//for contracts that have 2 limitation signs, e.g. "pragma solidity >0.6.0 <=0.8.0"
 						pragma.replace(opReg, '');
-						let oldVersion = false;
 						const firstHalf = pragma.substring(0, pragma.indexOf(signMatches[1]))
 						const secondHalf = pragma.substring(pragma.indexOf(signMatches[1]));
-						const pragmaArr = [firstHalf, secondHalf]
+						const pragmaArr = [firstHalf, secondHalf];
 						for (let i = 0; i < pragmaArr.length; i++) {
-							verReg.test(pragmaArr[i]) ? oldVersion = true : console.log("no matches")
-							
+							verReg.test(pragmaArr[i]) ? isOldVersion = true : null;
 						}
-						oldVersion ? console.log("Contract can run on older Solidity, consider changing to a newer version") : null;
 					} else if(signMatches.length === 1 && verReg.test(pragma)){
-						console.log("Compiling with an old version of Solidity, please change to a newer version.")
+						//for contracts with one limitation sign e.g. "pragma solidity ^0.8.11"
+						isOldVersion = true;
 					} else {
-						verReg.test(pragma) ? console.log("Compiling with an old version of Solidity, please set compiler to a newer version.") : null;
+						//for contracts that do not have a limitation sign, but just the solidity version specified e.g. "pragma solidity 0.6.0"
+						verReg.test(pragma) ? isOldVersion = true : null;
 					}
 				}
 			}
 		}
 	)
+
+	return isOldVersion;
 }
-const results = []
-const checkSafeMathUsage = (ast) =>{
+function importCheck(ast){
+	let hasImport = false;
 	parser.visit(ast, 
 		{
 			ImportDirective : function (node){
 				const fullPath = 'https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/math/SafeMath.sol'
 				const shortPath = '@openzeppelin/contracts/math/SafeMath.sol'
 
-				node.path.startsWith(fullPath) || node.path.startsWith(shortPath) ? console.log("Import Found"): console.log("Import not Found");
-			},
-
-			FunctionDefinition : function(func_node){
-				parser.visit(func_node, 
-					{
-						ExpressionStatement : function(exp_node){
-							const exp_type = exp_node.expression.type;
-							if(exp_type === 'UnaryOperation'){
-								visitUnaryOperation(ast, exp_node);
-							}else if(exp_type === 'BinaryOperation'){
-								visitBinaryOperation(ast, exp_node);
-							}
-					}
-				})
-			},
+				node.path.startsWith(fullPath) || node.path.startsWith(shortPath) ? hasImport = true : null;
+			}
 	})
+
+	return hasImport;
 }
 
+function findOperation(ast) {
+	let hasOperation = false;
+	parser.visit(ast, 
+		{
+		FunctionDefinition : function(func_node){
+			parser.visit(func_node, 
+				{
+					ExpressionStatement : function(exp_node){
+						const exp_type = exp_node.expression.type;
+						if(exp_type === 'UnaryOperation'){
+							hasOperation = true;
+							visitUnaryOperation(ast, exp_node);
+						}else if(exp_type === 'BinaryOperation'){
+							hasOperation = true;
+							visitBinaryOperation(ast, exp_node);
+						}
+				}
+			})
+		}
+	})
+
+	return hasOperation;
+}
 function visitUnaryOperation(ast, parent_node){
 	parser.visit(parent_node, {
 		UnaryOperation : function(op_node){
@@ -93,7 +106,6 @@ function visitUnaryOperation(ast, parent_node){
 		},
 	})
 }
-
 function visitBinaryOperation(ast, parent_node){
 	parser.visit(parent_node, {
 		BinaryOperation : function(op_node){
@@ -104,30 +116,48 @@ function visitBinaryOperation(ast, parent_node){
 		}
 	})
 }
-
 function variableCheck(ast, var_used) {
+	let isUsingSafeMath = false;
 	parser.visit(ast, {
 		StateVariableDeclaration : function(decl_node){
 			if(decl_node.variables.length === 1) {
 				const var_declared = decl_node.variables[0];
-				var_declared.identifier.name === var_used.name ? findDeclForType(ast, var_declared.typeName): null
+				if(var_declared.identifier.name === var_used.name){
+					isUsingSafeMath = findDeclForType(ast, var_declared.typeName)
+				}
 			}
 		}
 	})
+
+	return isUsingSafeMath;
 }
 function findDeclForType(ast, var_type){
+	let libraryFound = false;
 	parser.visit(ast, {
 		UsingForDeclaration : function(node){
 			if(node.libraryName === 'SafeMath' 
 			&& node.typeName['name'] === var_type['name']){
-				
+				libraryFound = true;
 			}
+		}
+	})
+
+	return libraryFound;
+}
+
+function findUnchecked(ast){
+	parser.visit(ast, {
+		UncheckedStatement : function(node){
+			importCheck(ast);
 		}
 	})
 }
 
-
-
 module.exports = {
-	parse
+	parse,
+	pragmaCheck,
+	importCheck,
+	findOperation,
+
+
 }
