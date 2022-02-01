@@ -4,7 +4,7 @@ const parser = require("@solidity-parser/parser");
 const parse = (filePath) => {
 	reader.readFile(filePath, 'utf-8', function(err, code){
 		try {
-			handleAST(parser.parse(code, {loc: true}));
+			handleAST(parser.parse(code));
 		} catch (e) {
 			if (e instanceof parser.ParserError) {
 				console.error(e.errors);
@@ -80,10 +80,6 @@ const checkSafeMathUsage = (ast) =>{
 					}
 				})
 			},
-
-			UsingForDeclaration : function(node){
-				node.libraryName === 'SafeMath' ? console.log("SafeMath Use Found") : console.log('SafeMath Use Not Found');
-			},
 	})
 }
 
@@ -92,14 +88,7 @@ function visitUnaryOperation(ast, parent_node){
 		UnaryOperation : function(op_node){
 			if(op_node.subExpression.type === 'Identifier'){
 				const var_used = op_node.subExpression
-				parser.visit(ast, {
-					StateVariableDeclaration : function(decl_node){
-						if(decl_node.variables.length === 1) {
-							const var_declared = decl_node.variables[0];
-							var_declared.identifier.name === var_used.name ? console.log("Variables Match") : null
-						}
-					}
-				})
+				variableCheck(ast, var_used);
 			}
 		},
 	})
@@ -110,59 +99,33 @@ function visitBinaryOperation(ast, parent_node){
 		BinaryOperation : function(op_node){
 			if(op_node.left.type === 'Identifier'){
 				const var_used = op_node.left
-				parser.visit(ast, {
-					StateVariableDeclaration : function(decl_node){
-						if(decl_node.variables.length === 1) {
-							const var_declared = decl_node.variables[0];
-							var_declared.identifier.name === var_used.name ? console.log("Variables Match") : null
-						}
-					}
-				})
+				variableCheck(ast, var_used);
 			}
 		}
 	})
 }
-function checkUsingDeclaration(ast){
+
+function variableCheck(ast, var_used) {
 	parser.visit(ast, {
-		UsingForDeclaration: function(node){
-			node.libraryName === 'SafeMath' ? console.log("SafeMath Use Found") : console.log('SafeMath Use Not Found');
+		StateVariableDeclaration : function(decl_node){
+			if(decl_node.variables.length === 1) {
+				const var_declared = decl_node.variables[0];
+				var_declared.identifier.name === var_used.name ? findDeclForType(ast, var_declared.typeName): null
+			}
 		}
 	})
 }
-
-function checkRequire(ast){
-	console.log(ast);
-}
-
-function checkSendUsage(ast){
+function findDeclForType(ast, var_type){
 	parser.visit(ast, {
-		FunctionDefinition: function(parent){
-			console.log("Visiting function");
-			parser.visit(parent, {
-				ExpressionStatement: function(child){
-					console.log("Visiting Statement");
-					console.log(child);
-					if(child.expression.type === 'FunctionCall'){
-						console.log("Found a Function Call");
-						
-					}
-				}
+		UsingForDeclaration : function(node){
+			if(node.libraryName === 'SafeMath' 
+			&& node.typeName['name'] === var_type['name']){
+				
 			}
-		)}
+		}
 	})
 }
 
-function checkMethodVisibility(ast){
-	parser.visit(ast, 
-		{
-			FunctionDefinition: function(node){
-				if(node.visibility === 'default'){
-						
-				}
-			}
-		}
-	)
-}
 
 
 module.exports = {
