@@ -2,7 +2,7 @@ const reader = require("fs");
 const parser = require("@solidity-parser/parser");
 
 const parse = (filePath) => {
-	reader.readFile(filePath, 'utf-8', function(err, code){
+	reader.readFile(filePath, 'utf-8', function(e, code){
 		try {
 			handleAST(parser.parse(code));
 		} catch (e) {
@@ -20,6 +20,7 @@ const find = (str, regex) => {
 function handleAST(ast){
 	importCheck(ast);
 }
+
 function pragmaCheck(ast){
 	const opReg = new RegExp('[>|<]+=?|\\^', 'g');
 	const verReg = new RegExp('(0\.(1\.[0-7])|(2\.[0-2])|(3\.[0-6])|(4\.[1-2]?[0-9])|(5\.1?[0-9])|(6\.1?[0-9])|(7\.[0-6])){1}');
@@ -135,8 +136,8 @@ function findDeclForType(ast, var_type){
 	let libraryFound = false;
 	parser.visit(ast, {
 		UsingForDeclaration : function(node){
-			if(node.libraryName === 'SafeMath' 
-			&& node.typeName['name'] === var_type['name']){
+			console.log(node);
+			if(node.libraryName === 'SafeMath' && node.typeName['name'] === var_type['name']){
 				libraryFound = true;
 			}
 		}
@@ -145,19 +146,10 @@ function findDeclForType(ast, var_type){
 	return libraryFound;
 }
 
-function findUnchecked(ast){
-	parser.visit(ast, {
-		UncheckedStatement : function(node){
-			importCheck(ast);
-		}
-	})
-}
-
 module.exports = {
 	parse,
 	pragmaCheck,
 	importCheck,
 	findOperation,
-
 
 }
