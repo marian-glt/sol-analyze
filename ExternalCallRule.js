@@ -1,7 +1,17 @@
+const parser = require("@solidity-parser/parser")
+
 const ExternalCallRule = (ast) => {
-    //need to check functions for
-    //external calls e.g. transfer, send, call, delegate call, anything else, calling external contracts, stuff like that
-    //when found then we want to look for if they are checked
-    //this is done by looking for a boolean value that is assigned to the call itself
-    //something like require(bool, ) = transfer(this);
+    const contracts = extractContracts(ast);
+}
+
+//extract contracts in file to avoid passing the whole AST throughout the execution
+const extractContracts = (ast) => {
+    var contracts = []
+    parser.visit(ast, {
+        ContractDefinition : function(node){
+            contracts.push(node);
+        }
+    })
+
+    return contracts;
 }
