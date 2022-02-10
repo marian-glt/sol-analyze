@@ -18,7 +18,7 @@ const find = (str, regex) => {
 }
 
 function handleAST(ast){
-	importCheck(ast);
+	
 }
 
 function pragmaCheck(ast){
@@ -70,7 +70,7 @@ function importCheck(ast){
 				node.path.startsWith(fullPath) || node.path.startsWith(shortPath) ? hasImport = true : null;
 			}
 	})
-
+	
 	return hasImport;
 }
 
@@ -96,6 +96,23 @@ function findOperation(ast) {
 	})
 
 	return hasOperation;
+}
+
+function visitExpression(ast, func_node){
+	let hasOperation = false;
+	parser.visit(func_node, 
+		{
+			ExpressionStatement : function(exp_node){
+				const exp_type = exp_node.expression.type;
+				if(exp_type === 'UnaryOperation'){
+					hasOperation = true;
+					visitUnaryOperation(ast, exp_node);
+				}else if(exp_type === 'BinaryOperation'){
+					hasOperation = true;
+					visitBinaryOperation(ast, exp_node);
+				}
+		}
+	})
 }
 function visitUnaryOperation(ast, parent_node){
 	parser.visit(parent_node, {
@@ -151,5 +168,4 @@ module.exports = {
 	pragmaCheck,
 	importCheck,
 	findOperation,
-
 }
