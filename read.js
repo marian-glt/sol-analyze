@@ -33,62 +33,28 @@ function importCheck(ast){
 }
 
 function findOperation(ast) {
-	let hasOperation = false;
 	parser.visit(ast, 
 		{
 		FunctionDefinition : function(func_node){
-			parser.visit(func_node, 
-				{
-					ExpressionStatement : function(exp_node){
-						const exp_type = exp_node.expression.type;
-						if(exp_type === 'UnaryOperation'){
-							hasOperation = true;
-							visitUnaryOperation(ast, exp_node);
-						}else if(exp_type === 'BinaryOperation'){
-							hasOperation = true;
-							visitBinaryOperation(ast, exp_node);
-						}
-				}
-			})
+			visitExpression(ast, func_node);
 		}
 	})
-
-	return hasOperation;
 }
 
 function visitExpression(ast, func_node){
-	let hasOperation = false;
 	parser.visit(func_node, 
 		{
 			ExpressionStatement : function(exp_node){
+				let var_used;
 				const exp_type = exp_node.expression.type;
-				if(exp_type === 'UnaryOperation'){
-					hasOperation = true;
-					visitUnaryOperation(ast, exp_node);
-				}else if(exp_type === 'BinaryOperation'){
-					hasOperation = true;
-					visitBinaryOperation(ast, exp_node);
+				if(exp_type === 'UnaryOperation' || exp_type === 'BinaryOperation'){
+					if(exp_type === 'UnaryOperation') {
+						var_used = exp_node.expression.subExpression;
+					} else {
+						var_used = exp_node.expression.left;
+					}
+					variableCheck(ast, var_used);
 				}
-		}
-	})
-}
-function visitUnaryOperation(ast, parent_node){
-	parser.visit(parent_node, {
-		UnaryOperation : function(op_node){
-			if(op_node.subExpression.type === 'Identifier'){
-				const var_used = op_node.subExpression
-				variableCheck(ast, var_used);
-			}
-		},
-	})
-}
-function visitBinaryOperation(ast, parent_node){
-	parser.visit(parent_node, {
-		BinaryOperation : function(op_node){
-			if(op_node.left.type === 'Identifier'){
-				const var_used = op_node.left
-				variableCheck(ast, var_used);
-			}
 		}
 	})
 }

@@ -2,7 +2,10 @@ const { OutdatedCompiler } = require("./OutdatedCompilerRule");
 const parser = require("@solidity-parser/parser");
 const IntegerRollover = (ast) => {
     const oc = OutdatedCompiler(ast);
-    oc ? ImportCheck(ast) : null;
+    if(oc) {
+        const ic = ImportCheck(ast);
+        const fo = FindOperation(ast, GetFunctions(ast));
+    }
 }
 
 const ImportCheck = (ast) =>{
@@ -20,6 +23,18 @@ const ImportCheck = (ast) =>{
 	return hasImport;
 }
 
+const FindOperation = (ast, functions) =>{
+    let hasOperation = false;
+    for (const func in functions) {
+        parser.visit(func, {
+            ExpressionStatement : function(exp_node){
+
+            }
+        })
+    }
+}
+
+
 const GetFunctions = (ast) =>{
     let functions = []
     parser.visit(ast, {
@@ -29,15 +44,4 @@ const GetFunctions = (ast) =>{
     })
 
     return functions;
-}
-
-const FindOperation = (ast, functions) =>{
-    let hasOperation = false;
-    for (const func in functions) {
-        parser.visit(func, {
-            ExpressionStatement : function(exp_node){
-                
-            }
-        })
-    }
 }
