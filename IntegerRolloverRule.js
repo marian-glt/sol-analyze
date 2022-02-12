@@ -1,14 +1,15 @@
 const { OutdatedCompiler } = require("./OutdatedCompilerRule");
 const parser = require("@solidity-parser/parser");
+
 const IntegerRollover = (ast) => {
     const oc = OutdatedCompiler(ast);
     if(oc) {
-        const ic = ImportCheck(ast);
-        const fo = FindOperation(ast, GetFunctions(ast));
+        let ic = ImportCheck(ast);
+        let fo = FindOperation(ast, GetFunctions(ast));
     }
 }
 
-const ImportCheck = (ast) =>{
+function ImportCheck(ast){
     let hasImport = false;
 	parser.visit(ast, 
 		{
@@ -23,18 +24,48 @@ const ImportCheck = (ast) =>{
 	return hasImport;
 }
 
-const FindOperation = (ast, functions) =>{
+function FindOperation(ast, functions){
     let hasOperation = false;
     for (const func in functions) {
         parser.visit(func, {
             ExpressionStatement : function(exp_node){
-
+                let var_used;
+				const exp_type = exp_node.expression.type;
+				if(exp_type === 'UnaryOperation' || exp_type === 'BinaryOperation'){
+					if(exp_type === 'UnaryOperation') {
+						var_used = exp_node.expression.subExpression;
+					} else {
+						var_used = exp_node.expression.left;
+					}
+					variableCheck(ast, var_used);
+				}
             }
         })
     }
 }
 
-
+function variableCheck(ast, var_used){
+    let isUsingSafeMath = false;
+	let var_type;
+	parser.visit(ast, {
+		StateVariableDeclaration : function(decl_node){
+			if(decl_node.variables.length === 1) {
+				const var_declared = decl_node.variables[0];
+				if(var_declared.identifier.name === var_used.name){
+					var_type = var_declared.typeName;
+					parser.visit(ast, {
+						UsingForDeclaration : function(node){
+							if(node.libraryName === 'SafeMath' && node.typeName['name'] === var_type['name']){
+								isUsingSafeMath = true;
+							}
+						}
+					})
+				}
+			}
+		},
+	})
+	return isUsingSafeMath;
+}
 const GetFunctions = (ast) =>{
     let functions = []
     parser.visit(ast, {

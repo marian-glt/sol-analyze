@@ -39,6 +39,7 @@
 	},
 	"dependencies": {
 		"@solidity-parser/parser": "^0.14.0",
-		"sol-explore": "^1.6.2"
+		"sol-explore": "^1.6.2",
+		"solidity-language-server": "^0.0.3"
 	}
 }
