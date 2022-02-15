@@ -7,7 +7,7 @@ const ExternalCallRule = (ast) => {
 function findCall(ast) {
     parser.visit(ast, {
         FunctionDefinition : function(node){
-            console.log(node);
+            findLonelyCall(node.body);
         }
     })
 }
@@ -19,34 +19,35 @@ function findCall(ast) {
  * */
 function findLonelyCall(block){
     let functionCall;
-    let searchResult;
-    let lonelyCallFindings = []
+    const lonelyCallFindings = []
     parser.visit(block, {
         ExpressionStatement : function(exp_node){
             if(exp_node.expression['type'] === 'FunctionCall' && exp_node.expression['expression'].type === 'MemberAccess'){
                 functionCall = exp_node.expression['expression'];
                 if(externalCall(functionCall.memberName)){
-                    searchResult = {
-                        'functionCalled' : functionCall.memberName,
+                    const searchResult = {
+                        'function' : functionCall.memberName,
                         'start' : functionCall.loc.start,
-                        'end' : functionCall.loc.end
+                        'end' : functionCall.loc.end,
                     }
                     lonelyCallFindings.push(searchResult);
                 }
             }
         }
     })
-    console.log(lonelyCallFindings.length);
     return lonelyCallFindings;
 }
-
-const externalCall = (memberName) =>{
+/**
+ * Check if the function call passed is any of the possible functions that need an external check.
+ * @param {String} memberName - The function called in the analyzed statement
+ * @returns True - If the function called is one of Ethereum's transfer functions.
+ */
+function externalCall(memberName){
     const possibleCalls = ['call', 'callcode', 'delegatecall', 'send', 'transfer'];
     let matches = false;
-    for (const call in possibleCalls) {
-        memberName === call ? matches = true : null;
-    }
-
+    possibleCalls.forEach(element => {
+        memberName === element ? matches = true : null;
+    });
     return matches;
 }
 module.exports = {
