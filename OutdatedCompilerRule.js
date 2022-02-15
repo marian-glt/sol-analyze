@@ -1,6 +1,6 @@
 const parser = require("@solidity-parser/parser")
 
-const OutdatedCompiler = (ast) => {
+const OutdatedCompilerRule = (ast) => {
     const opReg = new RegExp('[>|<]+=?|\\^', 'g');
 	const verReg = new RegExp('(0\.(1\.[0-7])|(2\.[0-2])|(3\.[0-6])|(4\.[1-2]?[0-9])|(5\.1?[0-9])|(6\.1?[0-9])|(7\.[0-6])){1}');
 	let isOldVersion = false;
@@ -44,5 +44,5 @@ const find = (str, regex) => {
 }
 
 module.exports = {
-    OutdatedCompiler
+    OutdatedCompilerRule
 }

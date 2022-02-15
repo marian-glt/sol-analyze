@@ -1,6 +1,6 @@
 const parser = require("@solidity-parser/parser");
 
-const VisiblityRule = (ast) =>{
+const VisibilityRule = (ast) =>{
     parser.visit(ast, {
         FunctionDefinition : function(node){
             if(!node.isFallback && !node.isConstructor){
@@ -12,5 +12,5 @@ const VisiblityRule = (ast) =>{
     })
 }
 module.exports = {
-    VisiblityRule
+    VisibilityRule
 }
