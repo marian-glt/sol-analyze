@@ -5,7 +5,7 @@ const { Rules } = require('./Rules');
 const parse = (filePath) => {
 	reader.readFile(filePath, 'utf-8', function(e, code){
 		try {
-			handleAST(parser.parse(code));
+			handleAST(parser.parse(code, {loc : true}));
 		} catch (e) {
 			if (e instanceof parser.ParserError) {
 				console.error(e.errors);
