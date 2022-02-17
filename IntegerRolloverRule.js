@@ -5,6 +5,10 @@ function IntegerRolloverRule(ast){
 	findOperation(ast);
 }
 
+function handleResults(){
+
+}
+
 function hasImport(ast){
     let hasImport = false;
 	parser.visit(ast, 
