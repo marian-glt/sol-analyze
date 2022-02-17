@@ -1,12 +1,15 @@
-const { OutdatedCompilerRule } = require("./OutdatedCompilerRule");
 const parser = require("@solidity-parser/parser");
 
 const IntegerRolloverRule = (ast) => {
-	const ic = ImportCheck(ast);
-	const fo = FindOperation(ast, GetFunctions(ast));
+	const imports = hasImport(ast);
+	const unsafeOperation = hasUnsafeOperation(ast, GetFunctions(ast));
+
+	if((!imports) && unsafeOperation){
+		console.log("I suggest you use SafeMath, because there are some variables that may be at risk of rollover.");
+	}
 }
 
-function ImportCheck(ast){
+function hasImport(ast){
     let hasImport = false;
 	parser.visit(ast, 
 		{
@@ -15,13 +18,14 @@ function ImportCheck(ast){
 				const shortPath = '@openzeppelin/contracts/math/SafeMath.sol'
 
 				node.path.startsWith(fullPath) || node.path.startsWith(shortPath) ? hasImport = true : null;
-			}
+		}
 	})
 	
 	return hasImport;
 }
 
-function FindOperation(ast, functions){
+function hasUnsafeOperation(ast, functions){
+	let hasUnsafeVariable = false;
     for (const func in functions) {
         parser.visit(func, {
             ExpressionStatement : function(exp_node){
@@ -33,11 +37,13 @@ function FindOperation(ast, functions){
 					} else {
 						var_used = exp_node.expression.left;
 					}
-					variableCheck(ast, var_used);
+					hasUnsafeVariable = variableCheck(ast, var_used);
 				}
             }
         })
     }
+
+	return hasUnsafeVariable;
 }
 
 function variableCheck(ast, var_used){
@@ -56,7 +62,7 @@ function variableCheck(ast, var_used){
 							if(node.libraryName === 'SafeMath' && node.typeName['name'] === var_type['name']){
 								isUsingSafeMath = true;
 							} else {
-								console.log("Found a variable that might be at risk of underflow. Line no:" + var_declared.loc.start.line)
+								console.log("A variable of type " + var_type['name'] + " is used in an operation that might be at risk of rollover. Line no:" + var_declared.loc.start.line)
 							}
 						}
 					})
