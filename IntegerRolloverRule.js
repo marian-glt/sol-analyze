@@ -2,11 +2,8 @@ const { OutdatedCompilerRule } = require("./OutdatedCompilerRule");
 const parser = require("@solidity-parser/parser");
 
 const IntegerRolloverRule = (ast) => {
-    let oc = OutdatedCompilerRule(ast);
-    if(oc) {
-        let ic = ImportCheck(ast);
-        let fo = FindOperation(ast, GetFunctions(ast));
-    }
+	const ic = ImportCheck(ast);
+	const fo = FindOperation(ast, GetFunctions(ast));
 }
 
 function ImportCheck(ast){
@@ -46,16 +43,20 @@ function FindOperation(ast, functions){
 function variableCheck(ast, var_used){
     let isUsingSafeMath = false;
 	let var_type;
+	
 	parser.visit(ast, {
 		StateVariableDeclaration : function(decl_node){
 			if(decl_node.variables.length === 1) {
 				const var_declared = decl_node.variables[0];
 				if(var_declared.identifier.name === var_used.name){
 					var_type = var_declared.typeName;
+					console.log("Found a variable that might be at risk of underflow. Line no:" + var_declared.loc.start.line)
 					parser.visit(ast, {
 						UsingForDeclaration : function(node){
 							if(node.libraryName === 'SafeMath' && node.typeName['name'] === var_type['name']){
 								isUsingSafeMath = true;
+							} else {
+								console.log("Found a variable that might be at risk of underflow. Line no:" + var_declared.loc.start.line)
 							}
 						}
 					})

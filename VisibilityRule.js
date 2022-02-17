@@ -5,7 +5,7 @@ const VisibilityRule = (ast) =>{
         FunctionDefinition : function(node){
             if(!node.isFallback && !node.isConstructor){
                 if(node.visibility === 'default'){
-                    console.log("You may have a function that does not have a set visibility at lines: %s", node.loc);
+                    console.log("You may have a function with default visibility at line: " + node.loc.start.line);
                 }
             }
         }

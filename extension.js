@@ -23,8 +23,8 @@ function activate(context) {
 		// The code you place here will be executed every time your command is executed
 		let message = '';
 		if(vscode.workspace.workspaceFolders !== undefined){
-			let file = vscode.window.activeTextEditor.document.uri.fsPath;
-			let ext = file.split('.').pop();
+			let file = vscode.window.activeTextEditor.document.uri;
+			let ext = file.fsPath.split('.').pop();
 			ext === 'sol' ? send_to_read(file): messenger('Sol-Analyzer: Cannot execute on a non-Solidity file, please try again.');
 		} else {
 			messenger("Sol-Analyzer: Working folder not found, open a folder then try again.");
@@ -41,8 +41,8 @@ function messenger(text){
 }
 
 function send_to_read(file){
-	messenger(`Sol-Analyzer executing on: ${file}`);
-	parse(file);
+	messenger(`Sol-Analyzer executing on: ${file.path}`);
+	parse(file.fsPath);
 }
 
 // this method is called when your extension is deactivated

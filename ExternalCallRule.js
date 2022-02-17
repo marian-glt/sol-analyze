@@ -7,7 +7,7 @@ const ExternalCallRule = (ast) => {
 function findCall(ast) {
     parser.visit(ast, {
         FunctionDefinition : function(node){
-            bestCase(ast);
+            worstCase(node.body);
         }
     })
 }
@@ -28,9 +28,10 @@ function worstCase(block){
                 if(externalCall(wanted, functionCall.memberName)){
                     const searchResult = {
                         'function' : functionCall.memberName,
-                        'start' : functionCall.loc.start,
-                        'end' : functionCall.loc.end,
+                        'start' : functionCall.loc.start.line,
+                        'end' : functionCall.loc.end.line,
                     }
+                    console.log("Unchecked External Call '" + searchResult.function + "' found at line " + searchResult.start);
                     worstCaseFindings.push(searchResult);
                 }
             }
@@ -83,7 +84,7 @@ function goodCase(block){
                                             'end' : functionCall.loc.end,
                                         };
 
-                                        goodCaseFindings.push(searchResult);
+                                        console.log(goodCaseFindings.push(searchResult));
                                     }
                                 }
                             }
