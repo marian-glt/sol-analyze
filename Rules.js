@@ -1,7 +1,7 @@
-const { ExternalCallRule } = require('./ExternalCallRule');
-const { OutdatedCompilerRule } = require('./OutdatedCompilerRule');
-const { IntegerRolloverRule } = require('./IntegerRolloverRule');
-const { VisibilityRule } = require('./VisibilityRule');
+const { ExternalCallRule } = require('./Rules/ExternalCallRule');
+const { OutdatedCompilerRule } = require('./Rules/OutdatedCompilerRule');
+const { IntegerRolloverRule } = require('./Rules/IntegerRolloverRule');
+const { VisibilityRule } = require('./Rules/VisibilityRule');
 
 const Rules = (ast) => {
     const ocr = OutdatedCompilerRule(ast);
