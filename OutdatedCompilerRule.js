@@ -10,7 +10,7 @@ function OutdatedCompilerRule(ast){
 				if(isUsingOperators.includes('^')){
 					importCase = checkCompilerVersion(pragma);
 				} else{
-					importCase = checkForTwoOperators(pragma);
+					importCase = checkForOtherOperators(pragma);
 				}
 			}
 		}
@@ -52,7 +52,7 @@ const isNewVersion = (version) =>{
 	return newVersions.test(version);
 }
 
-const checkForTwoOperators = (pragma) =>{
+const checkForOtherOperators = (pragma) =>{
 	const hasOperators = operators(pragma);
 	if(hasOperators){
 		const usedOperators = find(pragma, operators(undefined));
