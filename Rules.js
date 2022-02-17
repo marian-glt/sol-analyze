@@ -4,8 +4,10 @@ const { IntegerRolloverRule } = require('./IntegerRolloverRule');
 const { VisibilityRule } = require('./VisibilityRule');
 
 const Rules = (ast) => {
-    const ocr = OutdatedCompilerRule(ast);  
-    const irr = IntegerRolloverRule(ast);
+    const ocr = OutdatedCompilerRule(ast);
+    if(ocr){
+        const irr = IntegerRolloverRule(ast);
+    }
     const ecr = ExternalCallRule(ast);
     const vr = VisibilityRule(ast);
 };

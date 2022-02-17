@@ -63,7 +63,7 @@ const checkForTwoOperators = (pragma) =>{
 	const hasOperators = operators(pragma);
 	if(hasOperators){
 		const usedOperators = find(pragma, operators(undefined));
-		
+
 		/** In case the developer specifies a range of compiler versions for which the contract can execute.
 		 * For example, pragma solidity >0.6.0 <=0.8.11 */
 		if(usedOperators.length === 2){
@@ -97,22 +97,28 @@ const find = (str, regex) => {
  */
 const reportFindings = (results) =>{
 	let message = null;
+	let isUsingOldCompiler = null;
 	if(results.constructor === String){
 		if(results === '>=0.8.0'){
 			message = "Good! The contract is using a newer version of the compiler.";
+			isUsingOldCompiler = false;
 		} else if(results === '<0.8.0'){
 			message = "Warning! The contract can compile on an older version of Solidity.";
+			isUsingOldCompiler = true;
 		} else{
 			message = "Error! I think you're using an invalid compiler version, consider changing to something like 0.x.0, or lookup what the latest version of Solidity is."
+			isUsingOldCompiler = null;
 		}
 		
 	} else if(results.constructor === Array){
-		if(results.includes('invalid')){
-			message = "Error! I think you're using an invalid compiler version, consider changing to something like 0.x.0, or lookup what the latest version of Solidity is."
+		if(results.includes('>=0.8.0')){
+			isUsingOldCompiler = false;
 		} else if(results.includes('<0.8.0')){
 			message = "Warning! The contract can compile on an older version of Solidity.";
+			isUsingOldCompiler = true;
 		} else {
-			message = "Good! It looks like you're using a recent version of Solidity."
+			message = "Error! I think you're using an invalid compiler version, consider changing to something like 0.x.0, or lookup what the latest version of Solidity is."
+			isUsingOldCompiler = null;
 		}
 
 	} else{
@@ -120,6 +126,8 @@ const reportFindings = (results) =>{
 	}
 
 	console.log(message)
+
+	return isUsingOldCompiler;
 }
 
 module.exports = {
