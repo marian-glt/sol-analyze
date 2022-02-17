@@ -1,12 +1,8 @@
 const parser = require("@solidity-parser/parser");
 
-const IntegerRolloverRule = (ast) => {
+function IntegerRolloverRule(ast){
 	const imports = hasImport(ast);
-	const unsafeOperation = hasUnsafeOperation(ast, GetFunctions(ast));
-
-	if((!imports) && unsafeOperation){
-		console.log("I suggest you use SafeMath, because there are some variables that may be at risk of rollover.");
-	}
+	findOperation(ast);
 }
 
 function hasImport(ast){
@@ -20,68 +16,95 @@ function hasImport(ast){
 				node.path.startsWith(fullPath) || node.path.startsWith(shortPath) ? hasImport = true : null;
 		}
 	})
-	
 	return hasImport;
 }
 
-function hasUnsafeOperation(ast, functions){
+function findOperation(ast){
+	const functions = GetFunctions(ast);
 	let hasUnsafeVariable = false;
-    for (const func in functions) {
-        parser.visit(func, {
-            ExpressionStatement : function(exp_node){
-                let var_used;
-				const exp_type = exp_node.expression.type;
-				if(exp_type === 'UnaryOperation' || exp_type === 'BinaryOperation'){
-					if(exp_type === 'UnaryOperation') {
-						var_used = exp_node.expression.subExpression;
+	functions.forEach(func => {
+		parser.visit(func, {
+            ExpressionStatement : function(expNode){
+				const expType = expNode.expression.type;
+				if(expType === 'UnaryOperation' || expType === 'BinaryOperation'){
+					let varUsed;
+					//console.log("We have an op");
+					if(expType === 'UnaryOperation') {
+						varUsed = expNode.expression.subExpression;
 					} else {
-						var_used = exp_node.expression.left;
+						varUsed = expNode.expression.left;
 					}
-					hasUnsafeVariable = variableCheck(ast, var_used);
+					hasUnsafeVariable = variableDeclarationCheck(ast, varUsed);
 				}
             }
         })
-    }
+	});
 
 	return hasUnsafeVariable;
 }
 
-function variableCheck(ast, var_used){
-    let isUsingSafeMath = false;
-	let var_type;
-	
+function variableDeclarationCheck(ast, varUsed){
+	let isUsingSafeMath = false;
 	parser.visit(ast, {
-		StateVariableDeclaration : function(decl_node){
-			if(decl_node.variables.length === 1) {
-				const var_declared = decl_node.variables[0];
-				if(var_declared.identifier.name === var_used.name){
-					var_type = var_declared.typeName;
-					console.log("Found a variable that might be at risk of underflow. Line no:" + var_declared.loc.start.line)
-					parser.visit(ast, {
-						UsingForDeclaration : function(node){
-							if(node.libraryName === 'SafeMath' && node.typeName['name'] === var_type['name']){
-								isUsingSafeMath = true;
-							} else {
-								console.log("A variable of type " + var_type['name'] + " is used in an operation that might be at risk of rollover. Line no:" + var_declared.loc.start.line)
-							}
-						}
-					})
+		StateVariableDeclaration : function(node){
+			if(node.variables.length === 1){
+				const toCheck = node.variables[0];
+				if(toCheck.identifier.name === varUsed.name){
+					const discoveredBefore = protectedTypes(toCheck.typeName['name'], false);
+					if(discoveredBefore != true){
+						isUsingSafeMath = usingDeclarationCheck(ast, toCheck.typeName['name']);
+					} else if(discoveredBefore){
+						isUsingSafeMath = true;
+						return 0;
+					}
+					console.log(isUsingSafeMath)
 				}
 			}
-		},
+		}
 	})
+
 	return isUsingSafeMath;
 }
+
+function usingDeclarationCheck(ast, varType){
+	let typeProtected = false;
+	parser.visit(ast, {
+		UsingForDeclaration : function(usingNode){
+			if(usingNode.libraryName === 'SafeMath' && usingNode.typeName['name'] === varType){
+				typeProtected = true;
+				protectedTypes(varType, true);
+			}
+		}
+	})
+
+	return typeProtected;
+}
 function GetFunctions(ast){
-    let functions = []
+    const functions = []
     parser.visit(ast, {
         FunctionDefinition : function(node){
             functions.push(node);
         }
     })
-
     return functions;
 }
+
+function protectedTypes(typeName, add){
+	let newType = false;
+	types.forEach(type => {
+		type === typeName ? newType = false: null
+	});
+
+	if(add){
+		types.push(typeName);
+		newType = true;
+	}
+	
+	return newType;
+}
+
+const types = []
+
 
 module.exports = {
     IntegerRolloverRule
