@@ -1,7 +1,7 @@
 const parser = require("@solidity-parser/parser");
 
 const OutdatedCompilerRule = (ast) => {
-	let importCase;
+	let importCase = null;
 	parser.visit(ast, 
 		{
 			PragmaDirective: function(node){
@@ -10,13 +10,13 @@ const OutdatedCompilerRule = (ast) => {
 				if(isUsingOperators[0] === '^'){
 					importCase = checkCompilerVersion(pragma);
 				} else if(operators(pragma)){
-					importCase = checkForTwo(pragma);
+					importCase = checkForTwoOperators(pragma);
 				}
 			}
 		}
 	)
 
-	return importCase;
+	return reportFindings(importCase);
 }
 
 const checkCompilerVersion = (version) =>{
@@ -59,10 +59,11 @@ const isNewVersion = (version) =>{
 	return newVersions.test(version);
 }
 
-const checkForTwo = (pragma) =>{
+const checkForTwoOperators = (pragma) =>{
 	const hasOperators = operators(pragma);
 	if(hasOperators){
 		const usedOperators = find(pragma, operators(undefined));
+		
 		/** In case the developer specifies a range of compiler versions for which the contract can execute.
 		 * For example, pragma solidity >0.6.0 <=0.8.11 */
 		if(usedOperators.length === 2){
@@ -74,6 +75,15 @@ const checkForTwo = (pragma) =>{
 			});
 
 			return versionsStatus;
+
+		/** In case the developer uses only 1 or no operator to specify what compiler versions can be used with this contract.
+		 * For example:
+		 * pragma solidity >0.5.5
+		 * or
+		 * pragma solidity 0.8.0
+		 */
+		} else if(usedOperators.length <= 1){
+			return checkCompilerVersion(pragma);
 		}
 	}
 }
@@ -81,13 +91,35 @@ const checkForTwo = (pragma) =>{
 const find = (str, regex) => {
 	return (str.match(regex) || []);
 }
-
+/**
+ * This function will report back a message based on what compiler version the user allows their contracts to compile with.
+ * @param {Array | string} results 
+ */
 const reportFindings = (results) =>{
-	if(results === undefined){
-		console.log("I could not find the compiler version declaration, chances are it doesn't exist.");
-	} else if(typeof results !== 'string'){
-		//analyse returns
+	let message = null;
+	if(results.constructor === String){
+		if(results === '>=0.8.0'){
+			message = "Good! The contract is using a newer version of the compiler.";
+		} else if(results === '<0.8.0'){
+			message = "Warning! The contract can compile on an older version of Solidity.";
+		} else{
+			message = "Error! I think you're using an invalid compiler version, consider changing to something like 0.x.0, or lookup what the latest version of Solidity is."
+		}
+		
+	} else if(results.constructor === Array){
+		if(results.includes('invalid')){
+			message = "Error! I think you're using an invalid compiler version, consider changing to something like 0.x.0, or lookup what the latest version of Solidity is."
+		} else if(results.includes('<0.8.0')){
+			message = "Warning! The contract can compile on an older version of Solidity.";
+		} else {
+			message = "Good! It looks like you're using a recent version of Solidity."
+		}
+
+	} else{
+		message = "Uh oh! It seems like you haven't specified what compiler version should the contract work on.";
 	}
+
+	console.log(message)
 }
 
 module.exports = {
