@@ -6,8 +6,8 @@ const OutdatedCompilerRule = (ast) => {
 		{
 			PragmaDirective: function(node){
 				const pragma = node.value;
-				const matches = find(pragma, operators);
-				if(matches.length === 1 && matches[0] === '^'){
+				const isUsingOperators = find(pragma, operators);
+				if(isUsingOperators[0] === '^'){
 					importCase = checkCompilerVersion(pragma);
 				} else if(operators(pragma)){
 					importCase = checkForTwo(pragma);
@@ -48,7 +48,6 @@ const isOldVersion = (version) =>{
 							   '(5\.\b([0-9]|1[0-7])\b)|' + 
 							   '(6\.\b([0-9]|1[0-2])\b)| '+ 
 							   '(7\.[0-6])){1}'
-
 	const regex = new RegExp(oldVersions);
 
 	return regex.test(version);
@@ -73,12 +72,22 @@ const checkForTwo = (pragma) =>{
 			usedVersions.forEach(version => {
 				versionsStatus.push(checkCompilerVersion(version));
 			});
+
+			return versionsStatus;
 		}
 	}
 }
 
 const find = (str, regex) => {
 	return (str.match(regex) || []);
+}
+
+const reportFindings = (results) =>{
+	if(results === undefined){
+		console.log("I could not find the compiler version declaration, chances are it doesn't exist.");
+	} else if(typeof results !== 'string'){
+		//analyse returns
+	}
 }
 
 module.exports = {
