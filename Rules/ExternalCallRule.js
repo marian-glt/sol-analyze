@@ -5,10 +5,27 @@ function ExternalCallRule(ast){
             const bestResults = properLowLevelCheck(node.body);
             const goodResults = goodLowLevelCheck(node.body);
             const worstResults = uncheckedLowLevel(node.body);
+            handleGood(goodResults);
+            handleWorse(worstResults);
         }
     })
 }
 
+function handleWorse(results){
+    results.forEach(result => {
+        if(result.function === 'transfer'){
+            console.log("You are using 'transfer()' at line " + result.start + " consider using 'call()' with a return value check.");
+        } else {
+            console.log("Unchecked External Call '" + result.function + "' found at line " + result.start);
+        }
+    });
+}
+
+function handleGood(results){
+    results.forEach(result => {
+        console.log("Checked External call for '" + result.function + "' found at line " + result.start + " , consider using 'call()' instead.");
+    });
+}
 /**
  * @function uncheckedLowLevel — Looks for any instance in the source code where a transaction function may be called on its own.
  * e.g. _to.send(msg.value)
@@ -29,7 +46,6 @@ function uncheckedLowLevel(block){
                         'start' : functionCall.loc.start.line,
                         'end' : functionCall.loc.end.line,
                     }
-                    console.log("Unchecked External Call '" + searchResult.function + "' found at line " + searchResult.start);
                     worstCaseFindings.push(searchResult);
                 }
             }
@@ -70,6 +86,8 @@ function goodLowLevelCheck(functionBody){
             }
         }
     })
+
+    return goodCaseFindings;
 }
 
 function properLowLevelCheck(functionBody){
@@ -100,6 +118,8 @@ function properLowLevelCheck(functionBody){
             }
         }
     })
+
+    return bestCaseFindings;
 }
 
 function findRequire(functionBody, lowLevelCall, boolean){
