@@ -21,16 +21,14 @@ function activate(context) {
 	// The commandId parameter must match the command field in package.json
 	let disposable = vscode.commands.registerCommand('sol-analyze.exec', function () {
 		// The code you place here will be executed every time your command is executed
-		let message = '';
 		if(vscode.workspace.workspaceFolders !== undefined){
 			let file = vscode.window.activeTextEditor.document.uri;
+			vscode.window.createOutputChannel("Hello world");
 			let ext = file.fsPath.split('.').pop();
 			ext === 'sol' ? send_to_read(file): messenger('Sol-Analyzer: Cannot execute on a non-Solidity file, please try again.');
 		} else {
 			messenger("Sol-Analyzer: Working folder not found, open a folder then try again.");
 		}
-		// Display a message box to the user
-		vscode.window.showInformationMessage(message);
 	});
 
 	context.subscriptions.push(disposable);

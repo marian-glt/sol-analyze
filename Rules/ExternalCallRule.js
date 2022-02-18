@@ -1,5 +1,4 @@
-const parser = require("@solidity-parser/parser")
-
+const parser = require("@solidity-parser/parser");
 function ExternalCallRule(ast){
     parser.visit(ast, {
         FunctionDefinition : function(node){
@@ -24,9 +23,9 @@ function uncheckedLowLevel(block){
         ExpressionStatement : function(exp_node){
             if(exp_node.expression['type'] === 'FunctionCall' && exp_node.expression['expression'].type === 'MemberAccess'){
                 functionCall = exp_node.expression['expression'];
-                if(externalCall(wanted, functionCall.memberName)){
+                if(externalCall(wanted, functionCall['memberName'])){
                     const searchResult = {
-                        'function' : functionCall.memberName,
+                        'function' : functionCall['memberName'],
                         'start' : functionCall.loc.start.line,
                         'end' : functionCall.loc.end.line,
                     }
@@ -65,16 +64,7 @@ function goodLowLevelCheck(functionBody){
                         externalCall(wanted, call['memberName']) ? functionCall = call : null
 
                         let result = findRequire(functionBody, functionCall, boolean);
-                        if(result === null){
-                            result = {
-                                'function' : functionCall.memberName,
-                                'start' : functionCall.loc.start.line,
-                                'end' : functionCall.loc.end.line,
-                                'hasRequire' : false,
-                            }
-                        }
-                        goodCaseFindings.push(result);
-                        console.log(goodCaseFindings);
+                        result != null ? goodCaseFindings.push(result) : null
                     }
                 })
             }
@@ -122,8 +112,9 @@ function findRequire(functionBody, lowLevelCall, boolean){
                     const argument = functionCall.arguments[0];
                     let searchResult = null;
                     if(argument['name'] === boolean['name']){
+                        let functionName = lowLevelCall['memberName'];
                         searchResult = {
-                            'function' : lowLevelCall.memberName,
+                            'function' : functionName,
                             'start' : lowLevelCall.loc.start.line,
                             'end' : lowLevelCall.loc.end.line,
                             'hasRequire' : true,

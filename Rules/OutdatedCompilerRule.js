@@ -20,7 +20,6 @@ function OutdatedCompilerRule(ast){
 }
 
 function checkCompilerVersion(version){
-	console.log(version);
 	if(isNewVersion(version)){
 		return '>=0.8.0';
 	} else if(isOldVersion(version)){

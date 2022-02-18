@@ -6,8 +6,8 @@ const { VisibilityRule } = require('./Rules/VisibilityRule');
 const Rules = (ast) => {
     const ocr = OutdatedCompilerRule(ast);
     ocr ? IntegerRolloverRule(ast) : null;
-    const ecr = ExternalCallRule(ast);
-    const vr = VisibilityRule(ast);
+    ExternalCallRule(ast);
+    VisibilityRule(ast);
 };
 
 module.exports = {
