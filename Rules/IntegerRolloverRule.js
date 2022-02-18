@@ -3,10 +3,13 @@ const parser = require("@solidity-parser/parser");
 function IntegerRolloverRule(ast){
 	const imports = hasImport(ast);
 	findOperation(ast);
-	handleResults();
+	handleResults(imports);
 }
 
-function handleResults(){
+function handleResults(imports){
+	if(unprotTypes.length >= 1 && imports === false){
+		console.log("You have variables that are at risk of rollover, you should import SafeMath and declare it for their types.")
+	}
 	unprotTypes.forEach(type => {
 		console.log("I've detected that you variables with type '" + type + "' that are not protected using SafeMath.")
 	});
