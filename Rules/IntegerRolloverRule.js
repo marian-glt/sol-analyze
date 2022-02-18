@@ -3,10 +3,13 @@ const parser = require("@solidity-parser/parser");
 function IntegerRolloverRule(ast){
 	const imports = hasImport(ast);
 	findOperation(ast);
+	handleResults();
 }
 
 function handleResults(){
-
+	unprotTypes.forEach(type => {
+		console.log("I've detected that you variables with type '" + type + "' that are not protected using SafeMath.")
+	});
 }
 
 function hasImport(ast){
@@ -32,7 +35,6 @@ function findOperation(ast){
 				const expType = expNode.expression.type;
 				if(expType === 'UnaryOperation' || expType === 'BinaryOperation'){
 					let varUsed;
-					//console.log("We have an op");
 					if(expType === 'UnaryOperation') {
 						varUsed = expNode.expression.subExpression;
 					} else {
@@ -61,7 +63,6 @@ function variableDeclarationCheck(ast, varUsed){
 						isUsingSafeMath = true;
 						return 0;
 					}
-					console.log(isUsingSafeMath)
 				}
 			}
 		}
@@ -77,6 +78,8 @@ function usingDeclarationCheck(ast, varType){
 			if(usingNode.libraryName === 'SafeMath' && usingNode.typeName['name'] === varType){
 				typeProtected = true;
 				protectedTypes(varType, true);
+			} else {
+				unProtectedTypes(varType);
 			}
 		}
 	})
@@ -92,23 +95,32 @@ function GetFunctions(ast){
     })
     return functions;
 }
+function unProtectedTypes(typeName){
+	let isUnprotType = false
+	unprotTypes.forEach(type => {
+		type === typeName ? isUnprotType = false: null
+	});
 
+	if(!isUnprotType){
+		unprotTypes.push(typeName);
+	}
+}
 function protectedTypes(typeName, add){
 	let newType = false;
-	types.forEach(type => {
+	protTypes.forEach(type => {
 		type === typeName ? newType = false: null
 	});
 
 	if(add){
-		types.push(typeName);
+		protTypes.push(typeName);
 		newType = true;
 	}
 	
 	return newType;
 }
 
-const types = []
-
+const protTypes = []
+const unprotTypes = []
 
 module.exports = {
     IntegerRolloverRule
