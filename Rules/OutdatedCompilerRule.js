@@ -1,91 +1,60 @@
 const parser = require("@solidity-parser/parser");
 
 function OutdatedCompilerRule(ast){
-	let importCase = null;
-	parser.visit(ast, 
-		{
-			PragmaDirective: function(node){
-				const pragma = node.value;
-				const isUsingOperators = find(pragma, operators(undefined));
-				if(isUsingOperators.includes('^')){
-					importCase = checkCompilerVersion(pragma);
-				} else{
-					importCase = checkForOtherOperators(pragma);
-				}
-			}
-		}
-	)
+    let searchResult = null;
+    parser.visit(ast, 
+        {
+            PragmaDirective: function(node){
+                const compilerValue = node.value;
+                if(isValidOperands){
+                    const operandsUsed = find(compilerValue, operands);
+                    if(operandsUsed.length == 2 && !operandsUsed.includes('^')){
+                        const versionsString = compilerValue.replace(operands, '');
+                        const versionArray = versionsString.split(' ', 2);
+                        const comparisonArray =[]
+                        versionArray.forEach(version => {
+                            comparisonArray.push(checkVersion(version));
+                        })
+                        searchResult = comparisonArray;
+                    } else if(operandsUsed.length <= 1){
+                        searchResult = checkVersion(compilerValue);
+                    }
+                }
+            }
+        }
+    )
 
-	return reportFindings(importCase);
+    return reportFindings(searchResult);
 }
-
-function checkCompilerVersion(version){
-	if(isNewVersion(version)){
-		return '>=0.8.0';
-	} else if(isOldVersion(version)){
-		return '<0.8.0';
-	} else {
-		return 'invalid';
-	}
+function checkVersion(ver){
+    if(isNewVersion(ver)){
+        return '>=0.8.0';
+    } else if(isOldVersion(ver)){
+        return '<0.8.0';
+    } else {
+        return 'invalid';
+    }
 }
-
-const operators = (operator) =>{
-	const operands = new RegExp('[>|<]+=?|\\^', 'g');
-	const illegalOperands = new RegExp('=>|=<', 'g');
-
-	if(typeof operator !== "undefined"){
-		return (operands.test(operator) && !illegalOperands.test(operator));
-	} 
-	
-	return operands;
-}
-
 function isOldVersion(version){
-	const oldVersions = '(0\.)+((1\.[0-7])|(2\.[0-2])|(3\.[0-6])|(4\.\b([0-9]|1[0-9]|2[0-6])\b)|(5\.\b([0-9]|1[0-7])\b)|(6\.\b([0-9]|1[0-2])\b)|(7\.[0-6])){1}'
-	const regex = new RegExp(oldVersions);
+	//const oldVersions = '(0\.)+((4\.\b([0-9]|1[0-9]|2[0-6])\b)|(5\.\b([0-9]|1[0-7])\b)|(6\.\b([0-9]|1[0-2])\b)|(7\.[0-6])){1}'
+    const oldVersions = '(0\.+((4\.([0-9]|1[0-9]|2[0-6]))|(5\.([0-9]|1[0-7]))|(6\.([0-9]|1[0-2]))|(7\.[0-6])))'
+	const regex = new RegExp(oldVersions, 'g');
 	return regex.test(version);
 }
 
-const isNewVersion = (version) =>{
-	const newVersions = new RegExp('(0\.)+(8\.\b([0-9]|1[0-2])\b)');
+function isNewVersion(version){
+	const newVersions = new RegExp('(0\.)+(8\.([0-9]|1[0-2]))');
 	return newVersions.test(version);
 }
-
-const checkForOtherOperators = (pragma) =>{
-	const hasOperators = operators(pragma);
-	if(hasOperators){
-		const usedOperators = find(pragma, operators(undefined));
-		/** In case the developer specifies a range of compiler versions for which the contract can execute.
-		 * For example, pragma solidity >0.6.0 <=0.8.11 */
-		if(usedOperators.length === 2){
-			pragma = pragma.replace(operators(undefined), '');
-			const usedVersions = pragma.split(' ', 2);
-			const versionsStatus = []
-			usedVersions.forEach(version => {
-				versionsStatus.push(checkCompilerVersion(version));
-			});
-
-			return versionsStatus;
-
-		/** In case the developer uses only 1 or no operator to specify what compiler versions can be used with this contract.
-		 * For example:
-		 * pragma solidity >0.5.5
-		 * or
-		 * pragma solidity 0.8.0
-		 */
-		} else if(usedOperators.length <= 1){
-			return checkCompilerVersion(pragma);
-		}
-	}
+const isValidOperands = (op) =>{
+    return (operands.test(op) && !invalidOperands.test(op));
 }
-
 const find = (str, regex) => {
 	return (str.match(regex) || []);
 }
-/**
- * This function will report back a message based on what compiler version the user allows their contracts to compile with.
- * @param {Array | string} results 
- */
+const operands = new RegExp('[>|<]+=?|\\^', 'g');
+const invalidOperands = new RegExp('=>|=<', 'g');
+
 const reportFindings = (results) =>{
 	let message = null;
 	let isUsingOldCompiler = null;
@@ -102,25 +71,27 @@ const reportFindings = (results) =>{
 		}
 		
 	} else if(results.constructor === Array){
-		if(results.includes('>=0.8.0')){
-			isUsingOldCompiler = false;
-		} else if(results.includes('<0.8.0')){
-			message = "Warning! The contract can compile on an older version of Solidity.";
-			isUsingOldCompiler = true;
-		} else {
-			message = "Error! I think you're using an invalid compiler version, consider changing to something like 0.x.0, or lookup what the latest version of Solidity is."
+        if(results.includes('invalid')){
+            message = "Error! I think you're using an invalid compiler version, consider changing to something like 0.x.0, or lookup what the latest version of Solidity is."
 			isUsingOldCompiler = null;
-		}
+        } else {
+            if(results.includes('>=0.8.0')){
+                isUsingOldCompiler = false;
+            }
 
+            if(results.includes('<0.8.0')){
+                message = "Warning! The contract can compile on an older version of Solidity.";
+                isUsingOldCompiler = true;
+            }
+        }
 	} else{
 		message = "Uh oh! It seems like you haven't specified what compiler version should the contract work on.";
 	}
 
-	console.log(message)
+	message !== null ? console.log(message) : null;
 
 	return isUsingOldCompiler;
 }
-
 module.exports = {
     OutdatedCompilerRule
 }
