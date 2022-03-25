@@ -78,9 +78,10 @@ function goodLowLevelCheck(functionBody){
                     FunctionCall : function(node){
                         const call = node.expression
                         externalCall(wanted, call['memberName']) ? functionCall = call : null
-
-                        let result = findRequire(functionBody, functionCall, boolean);
-                        result != null ? goodCaseFindings.push(result) : null
+                        if(externalCall(wanted, call['memberName'])){
+                            let result = findRequire(functionBody, call['memberName'], boolean);
+                            result != null ? goodCaseFindings.push(result) : null
+                        }
                     }
                 })
             }
@@ -109,12 +110,11 @@ function properLowLevelCheck(functionBody){
                     NameValueExpression : function(nve_node){
                         if(nve_node.expression['type'] === 'MemberAccess' && nve_node.expression['memberName'] === 'call'){
                                 functionCall = nve_node.expression;
+                                let result = findRequire(functionBody, functionCall, boolean);
+                                result != null ? bestCaseFindings.push(result) : null
                         }
                     }
                 })
-
-                let result = findRequire(functionBody, functionCall, boolean);
-                result != null ? bestCaseFindings.push(result) : null
             }
         }
     })
@@ -132,9 +132,9 @@ function findRequire(functionBody, lowLevelCall, boolean){
                     const argument = functionCall.arguments[0];
                     let searchResult = null;
                     if(argument['name'] === boolean['name']){
-                        let functionName = lowLevelCall['memberName'];
+
                         searchResult = {
-                            'function' : functionName,
+                            'function' : lowLevelCall.memberName,
                             'start' : lowLevelCall.loc.start.line,
                             'end' : lowLevelCall.loc.end.line,
                             'hasRequire' : true,

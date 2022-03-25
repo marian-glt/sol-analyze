@@ -36,6 +36,7 @@ function checkVersion(ver){
     }
 }
 function isOldVersion(version){
+	//const oldVersions = '(0\.)+((4\.\b([0-9]|1[0-9]|2[0-6])\b)|(5\.\b([0-9]|1[0-7])\b)|(6\.\b([0-9]|1[0-2])\b)|(7\.[0-6])){1}'
     const oldVersions = '(0\.+((4\.([0-9]|1[0-9]|2[0-6]))|(5\.([0-9]|1[0-7]))|(6\.([0-9]|1[0-2]))|(7\.[0-6])))'
 	const regex = new RegExp(oldVersions, 'g');
 	return regex.test(version);
