@@ -11,7 +11,7 @@ function OutdatedCompilerRule(ast){
                     if(operandsUsed.length == 2 && !operandsUsed.includes('^')){
                         const versionsString = compilerValue.replace(operands, '');
                         const versionArray = versionsString.split(' ', 2);
-                        const comparisonArray =[]
+                        const comparisonArray = [];
                         versionArray.forEach(version => {
                             comparisonArray.push(checkVersion(version));
                         })
