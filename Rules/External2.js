@@ -80,16 +80,13 @@ function findRequireCall(block, boolean){
     let unChecked = true;
     parser.visit(block, {
         ExpressionStatement : function(exp_node){
-            console.log(8);
             if(exp_node.expression.type === 'FunctionCall'){
-                console.log(9);
                 const functionCall = exp_node.expression;
-                if(functionCall.expression['name'] === 'require'){
-                    console.log(10);
-                    const argument = functionCall.arguments[0];
-                    if(argument['name'] === boolean['name']){
 
-                        console.log(11);
+                if(functionCall.expression['name'] === 'require'){
+                    const argument = functionCall.arguments[0];
+
+                    if(argument['name'] === boolean['name']){
                         unChecked = false;
                     }
                 }
