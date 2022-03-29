@@ -52,29 +52,6 @@ function findStoredCall2(block){
         }
     })
 }
-function findStoredCall(block){
-    let results = [];
-    parser.visit(block, {
-        VariableDeclarationStatement : function(vd_node){
-            let variable = isBool(vd_node);
-            console.log(variable)
-            if(variable != null && vd_node.initialValue.type === 'FunctionCall'){
-                console.log(vd_node);
-                parser.visit(vd_node.initialValue, {
-                    FunctionCall : function(node){
-                        const call = isMatch(node.expression.memberName);
-                        console.log(call);
-                        if(call.includes('send') || call.includes('call')){
-                            findRequireCall(block, variable);
-                        } else if(isMatch(call).includes('transfer')){
-                            //useless transfer
-                        }
-                    }
-                })
-            }
-        }
-    })
-}
 
 function findRequireCall(block, boolean){
     let unChecked = true;
