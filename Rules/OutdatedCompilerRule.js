@@ -46,8 +46,6 @@ function isNewVersion(version){
 	return newVersions.test(version);
 }
 const isValidOperands = (op) =>{
-    const good_op_order = operands.test(op) && !invalidOperands.test(op);
-    if(operands.test(op) && !invalidOperands.test(op))
     return (operands.test(op) && !invalidOperands.test(op));
 }
 const find = (str, regex) => {
