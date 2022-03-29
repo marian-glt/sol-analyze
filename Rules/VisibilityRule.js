@@ -8,6 +8,7 @@ function VisibilityRule(ast){
                     console.log("Your function " + node.name + " has default visibility at line: " + node.loc.start.line);
                 }
             }
+
         }
     })
 }

@@ -98,5 +98,5 @@ function hasSafeMath(ast){
 const protected_types = [];
 
 module.exports = {
-    IntegerRolloverRule
+    findOperation
 }

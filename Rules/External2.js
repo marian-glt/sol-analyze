@@ -3,8 +3,8 @@ const parser = require("@solidity-parser/parser");
 function ExternalCallRule(ast){
     parser.visit(ast, {
         FunctionDefinition : function(node){
-            //findLonelyCall(node.body);
-            findStoredCall2(node.body);
+            findLonelyCall(node.body);
+            findStoredCall(node.body);
 
         }
     })
@@ -26,15 +26,14 @@ function findLonelyCall(block){
 }
 
 
-function findStoredCall2(block){
+function findStoredCall(block){
     let call = null;
     parser.visit(block, {
         VariableDeclarationStatement : function(vd_node){
             if(vd_node.initialValue.type === 'FunctionCall'){
                 parser.visit(vd_node.initialValue, {
                     FunctionCall : function(node){
-                        ///CANT CHECK REQUIRE STATEMENT, I THINK THAT ON AN ARRAY VARIABLE IT IS NOT PASSED PROPERLY
-                        console.log(vd_node);
+
                         if(node.expression.type === 'MemberAccess'){
                             call = isMatch(node.expression.memberName);
                         } else if(node.expression.type === 'NameValueExpression'){
@@ -42,7 +41,8 @@ function findStoredCall2(block){
                         }
                         
                         if(call.includes('send') || call.includes('call')){
-                            findRequireCall(block, node);
+                            console.log(vd_node.variables[0]['name']);
+                            findRequireCall(block, vd_node);
                         } else if(call.includes('transfer')){
                             //log transfer call
                         }
@@ -53,7 +53,7 @@ function findStoredCall2(block){
     })
 }
 
-function findRequireCall(block, boolean){
+function findRequireCall(block, boolean_var){
     let unChecked = true;
     parser.visit(block, {
         ExpressionStatement : function(exp_node){
@@ -61,10 +61,12 @@ function findRequireCall(block, boolean){
                 const functionCall = exp_node.expression;
 
                 if(functionCall.expression['name'] === 'require'){
-                    const argument = functionCall.arguments[0];
-
-                    if(argument['name'] === boolean['name']){
+                    const parameter_var = functionCall.arguments[0].name;
+                    const boolean_var_name = boolean_var.variables[0].name;
+                    if(parameter_var === boolean_var_name){
                         unChecked = false;
+                    } else {
+                        unChecked = true;
                     }
                 }
             }
@@ -72,17 +74,6 @@ function findRequireCall(block, boolean){
     })
 
     return unChecked;
-}
-
-function isBool(vd_node){
-    let boolean = null;
-    parser.visit(vd_node, {
-        VariableDeclaration : function(variable) {
-            variable.typeName['name'] === 'bool' ? boolean = variable : null
-        }
-    })
-
-    return boolean;
 }
 
 function isExternalCall(exp_node){
@@ -95,7 +86,6 @@ function isExternalCall(exp_node){
 
 const isMatch = (func) => {
     let regex = new RegExp('(transfer)|(send)|(call)', 'g');
-    console.log(func);
     return (func.match(regex) || []);
 }
 module.exports = {

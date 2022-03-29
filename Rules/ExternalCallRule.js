@@ -1,167 +1,92 @@
 const parser = require("@solidity-parser/parser");
+
 function ExternalCallRule(ast){
     parser.visit(ast, {
         FunctionDefinition : function(node){
-            const bestResults = properLowLevelCheck(node.body);
-            const goodResults = goodLowLevelCheck(node.body);
-            const worstResults = uncheckedLowLevel(node.body);
-            handleGood(goodResults);
-            handleWorse(worstResults);
+            findLonelyCall(node.body);
+            findStoredCall(node.body);
+
         }
     })
 }
 
-function handleWorse(results){
-    results.forEach(result => {
-        if(result.function === 'transfer'){
-            console.log("You are using 'transfer()' at line " + result.start + " consider using 'call()' with a return value check.");
-        } else {
-            console.log("Unchecked External Call '" + result.function + "' found at line " + result.start);
-        }
-    });
-}
-
-function handleGood(results){
-    results.forEach(result => {
-        console.log("Checked External call for '" + result.function + "' found at line " + result.start + " , consider using 'call()' instead.");
-    });
-}
-/**
- * @function uncheckedLowLevel — Looks for any instance in the source code where a transaction function may be called on its own.
- * e.g. _to.send(msg.value)
- * @param {import("@solidity-parser/parser/dist/src/ast-types").Block} block 
- * Block contains all statements that can be part of a method in the case of this application.  
- * */
-function uncheckedLowLevel(block){
-    let functionCall = null;
-    const wanted = ['call', 'callcode', 'delegatecall', 'send', 'transfer']
-    const worstCaseFindings = []
+function findLonelyCall(block){
+    let results = []
     parser.visit(block, {
         ExpressionStatement : function(exp_node){
-            if(exp_node.expression['type'] === 'FunctionCall' && exp_node.expression['expression'].type === 'MemberAccess'){
-                functionCall = exp_node.expression['expression'];
-                if(externalCall(wanted, functionCall['memberName'])){
-                    const searchResult = {
-                        'function' : functionCall['memberName'],
-                        'start' : functionCall.loc.start.line,
-                        'end' : functionCall.loc.end.line,
-                    }
-                    worstCaseFindings.push(searchResult);
+            if(isExternalCall(exp_node)){
+                let calledFunction = exp_node.expression['expression']['memberName'];
+                if(isMatch(calledFunction).length === 1){
+                    results.push(exp_node);
                 }
             }
         }
     })
-    return worstCaseFindings;
+    return results;
 }
-/**
- * @function goodCase Looks for any instance in the source code where a transaction function is called AND checked using require,
- * but the developer doesn't use 'call' as the function for the transaction to be performed, which is the recommended way of doing it.
- * @param {import("@solidity-parser/parser/dist/src/ast-types").Block} functionBody 
- */
-function goodLowLevelCheck(functionBody){
-    const wanted = ['callcode', 'delegatecall', 'send']
-    const goodCaseFindings = []
-    parser.visit(functionBody, {
-        VariableDeclarationStatement : function(vd_node){
-            let boolean = null;
-            parser.visit(vd_node, {
-                VariableDeclaration : function(variable){
-                    if(variable.typeName['name'] === 'bool'){
-                        boolean = variable;
-                    }
-                }
-            })
 
-            if(boolean != null && vd_node.initialValue.type === 'FunctionCall'){
-                let functionCall = null;
+
+function findStoredCall(block){
+    let call = null;
+    parser.visit(block, {
+        VariableDeclarationStatement : function(vd_node){
+            if(vd_node.initialValue.type === 'FunctionCall'){
                 parser.visit(vd_node.initialValue, {
                     FunctionCall : function(node){
-                        const call = node.expression
-                        externalCall(wanted, call['memberName']) ? functionCall = call : null
-                        if(externalCall(wanted, call['memberName'])){
-                            let result = findRequire(functionBody, call['memberName'], boolean);
-                            result != null ? goodCaseFindings.push(result) : null
+
+                        if(node.expression.type === 'MemberAccess'){
+                            call = isMatch(node.expression.memberName);
+                        } else if(node.expression.type === 'NameValueExpression'){
+                            call = isMatch(node.expression.expression['memberName']);
+                        }
+                        
+                        if(call.includes('send') || call.includes('call')){
+                            console.log(vd_node.variables[0]['name']);
+                            findRequireCall(block, vd_node);
+                        } else if(call.includes('transfer')){
+                            //log transfer call
                         }
                     }
                 })
             }
         }
     })
-
-    return goodCaseFindings;
 }
 
-function properLowLevelCheck(functionBody){
-    const bestCaseFindings = []
-    parser.visit(functionBody, {
-        VariableDeclarationStatement : function(vd_node){
-            let boolean = null;
-            parser.visit(vd_node, {
-                VariableDeclaration : function(variable){
-                    if(variable.typeName['name'] === 'bool'){
-                        boolean = variable;
-                    }
-                }
-            })
+function findRequireCall(block, boolean_var){
+    let unChecked = true;
+    parser.visit(block, {
+        ExpressionStatement : function(exp_node){
+            if(exp_node.expression.type === 'FunctionCall'){
+                const functionCall = exp_node.expression;
 
-            if(boolean != null && vd_node.initialValue.type === 'FunctionCall'){
-                let functionCall = null;
-                parser.visit(vd_node.initialValue, {
-                    NameValueExpression : function(nve_node){
-                        if(nve_node.expression['type'] === 'MemberAccess' && nve_node.expression['memberName'] === 'call'){
-                                functionCall = nve_node.expression;
-                                let result = findRequire(functionBody, functionCall, boolean);
-                                result != null ? bestCaseFindings.push(result) : null
-                        }
-                    }
-                })
-            }
-        }
-    })
-
-    return bestCaseFindings;
-}
-
-function findRequire(functionBody, lowLevelCall, boolean){
-    let result = null;
-    parser.visit(functionBody, {
-        ExpressionStatement : function(expNode){
-            if(expNode.expression.type === 'FunctionCall'){
-                const functionCall = expNode.expression;
                 if(functionCall.expression['name'] === 'require'){
-                    const argument = functionCall.arguments[0];
-                    let searchResult = null;
-                    if(argument['name'] === boolean['name']){
-
-                        searchResult = {
-                            'function' : lowLevelCall.memberName,
-                            'start' : lowLevelCall.loc.start.line,
-                            'end' : lowLevelCall.loc.end.line,
-                            'hasRequire' : true,
-                        }
-
+                    const parameter_var = functionCall.arguments[0].name;
+                    const boolean_var_name = boolean_var.variables[0].name;
+                    if(parameter_var === boolean_var_name){
+                        unChecked = false;
+                    } else {
+                        unChecked = true;
                     }
-
-                    result = searchResult;
                 }
             }
         }
     })
 
-    return result;
+    return unChecked;
 }
-/**
- * Check if the function call passed is any of the possible functions that need an external check.
- * @param {Array} possibleCalls - Array of function calls to look out for
- * @param {String} memberName - The function called in the analyzed statement
- * @returns True - If the function called is one of Ethereum's transfer functions.
- */
-function externalCall(possibleCalls, memberName){
-    let matches = false;
-    possibleCalls.forEach(element => {
-        memberName === element ? matches = true : null;
-    });
-    return matches;
+
+function isExternalCall(exp_node){
+    if(exp_node.expression.type === 'FunctionCall' && exp_node.expression['expression'].type === 'MemberAccess'){
+        return true;
+    }
+
+    return false;
+}
+
+const isMatch = (func) => {
+    let regex = new RegExp('(transfer)|(send)|(call)', 'g');
+    return (func.match(regex) || []);
 }
 module.exports = {
     ExternalCallRule
