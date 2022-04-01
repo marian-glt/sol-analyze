@@ -22,6 +22,15 @@ function findLonelyCall(block){
             }
         }
     })
+    results.forEach(call => {
+        let calledFunction = call.expression['expression']['memberName'];
+        
+        if(calledFunction.startsWith('transfer')){
+            console.log("transfer() call found at line " + call.loc.start.line + ", consider using call() and checking its return value using require().")
+        } else {
+            console.log("Unchecked External Call " + call + "() found at line " + call.loc.start.line + " consider checking the return value using require().");
+        }
+    });
     return results;
 }
 
@@ -41,10 +50,13 @@ function findStoredCall(block){
                         }
                         
                         if(call.includes('send') || call.includes('call')){
-                            console.log(vd_node.variables[0]['name']);
-                            findRequireCall(block, vd_node);
+                            console.log(call)
+                            const require_call = findRequireCall(block, vd_node)
+                            if(!require_call){
+                                console.log("Unchecked External Call " + call + " at line " + node.loc.start.line);
+                            }
                         } else if(call.includes('transfer')){
-                            //log transfer call
+                            console.log("transfer() Call " + call + " at line " + node.loc.start.line + " consider using call() and check it's return value.");
                         }
                     }
                 })

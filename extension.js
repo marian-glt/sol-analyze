@@ -35,7 +35,7 @@ function messenger(text){
 }
 
 function send_to_read(file){
-	messenger(`Sol-Analyzer executing on: ${file.path}`);
+	messenger(`Sol-Analyzer executing on: your Solidity File`);
 	parse(file.fsPath);
 }
 

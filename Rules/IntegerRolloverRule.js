@@ -14,8 +14,8 @@ function findOperation(ast){
                 const exp_type = exp_node.expression.type;
 
                 if(exp_type === 'UnaryOperation' || exp_type === 'BinaryOperation'){
-                    let var_used = null;
-                    if(hasSafeMath) {
+                    let var_used;
+                    if(!hasSafeMath(ast)) {
                         if(exp_type === 'UnaryOperation'){
                             var_used = exp_node.expression.subExpression;
                         } else {
@@ -23,7 +23,13 @@ function findOperation(ast){
                         }
 
                         has_unsafe_var = findVariableDeclaration(ast, var_used);
+
+                        if(!has_unsafe_var){
+                            console.log("Integer Variable at risk of rollover, found at line: " + var_used.loc.start.line + ", consider importing and declaring the variable with SafeMath.");
+                        }
                     }
+
+                    
                 }
             }
         })

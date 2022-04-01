@@ -6,7 +6,7 @@ function OutdatedCompilerRule(ast){
         {
             PragmaDirective: function(node){
                 const compilerValue = node.value;
-                if(isValidOperands){
+                if(isValidOperands(node.value)){
                     const operandsUsed = find(compilerValue, operands);
                     if(operandsUsed.length == 2 && !operandsUsed.includes('^')){
                         const versionsString = compilerValue.replace(operands, '');
@@ -83,7 +83,7 @@ const reportFindings = (results) =>{
                 isUsingOldCompiler = true;
             }
         }
-	} else{
+	} else if(typeof results === undefined){
 		message = "Uh oh! It seems like you haven't specified what compiler version should the contract work on.";
 	}
 
